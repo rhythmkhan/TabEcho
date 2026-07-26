@@ -1,79 +1,36 @@
 import {
-  DownloadFormat,
   ExtensionMessage,
   ExtensionMessageTypeEnum,
-  SessionRecord,
   SessionRoleEnum,
 } from '@/shared/types';
-import { EventCapture, EventReplay } from './mirror';
+import { EventApplier } from './event-applier';
+import { EventCapture } from './event-capture';
 import { RoleBadge } from './role-badge';
+import { StatusOverlay } from './status-overlay';
 import { VirtualCursor } from './virtual-cursor';
-import { logger } from '@/shared/util';
 
-const cursor = new VirtualCursor();
-const capture = new EventCapture();
-const replay = new EventReplay(cursor);
-const badge = new RoleBadge();
+const roleBadge = new RoleBadge();
+const statusOverlay = new StatusOverlay();
+const virtualCursor = new VirtualCursor();
+const eventApplier = new EventApplier(virtualCursor);
+const eventCapture = new EventCapture();
 
 chrome.runtime.onMessage.addListener((message: ExtensionMessage) => {
-  switch (message.type) {
-    case ExtensionMessageTypeEnum.SetRole: {
-      capture.setRole(message.role);
-      badge.update(message.role);
-      if (
-        message.role === SessionRoleEnum.Target ||
-        message.role === SessionRoleEnum.Replay
-      ) {
-        cursor.show();
-      } else {
-        cursor.hide();
-      }
-      logger.log(`Role set to: ${message.role}`);
-      break;
-    }
+  if (message.type === ExtensionMessageTypeEnum.SetRole) {
+    const { role, generation, isPaused } = message;
 
-    case ExtensionMessageTypeEnum.ReplayEvent: {
-      replay.replay(message.payload);
-      break;
-    }
+    roleBadge.setRole(role);
+    statusOverlay.show(role, isPaused);
 
-    case ExtensionMessageTypeEnum.DownloadRecord: {
-      downloadRecord(message.payload.format, replay.sessionRecords);
-      break;
-    }
+    eventCapture.setRole(role, generation, isPaused);
+    eventApplier.setRole(role, generation);
 
-    case ExtensionMessageTypeEnum.ClearRecord: {
-      replay.clear();
-      break;
+    if (role === SessionRoleEnum.Target) {
+      virtualCursor.show();
+    } else {
+      virtualCursor.hide();
     }
+  } else if (message.type === ExtensionMessageTypeEnum.LiveSyncEvent) {
+    void eventApplier.applyEvent(message.payload);
   }
 });
-
-function downloadRecord(
-  format: DownloadFormat,
-  records: ReadonlyArray<SessionRecord>,
-): void {
-  let content: string;
-  let mimeType: string;
-  let extension: string;
-
-  if (format === 'json') {
-    content = JSON.stringify(records, null, 2);
-    mimeType = 'application/json';
-    extension = 'json';
-  } else {
-    const formatRecord = (r: SessionRecord) =>
-      `[${r.timestamp}] ${r.type} | selector stack trace: ${r.selectorStackTrace} | selector: ${r.selector} | content: ${JSON.stringify(r.content)}`;
-    content = records.map(formatRecord).join('\n');
-    mimeType = 'text/plain';
-    extension = 'txt';
-  }
-
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `mirrortab-session-${new Date().toISOString().replace(/[:.]/g, '-')}.${extension}`;
-  a.click();
-  URL.revokeObjectURL(url);
-}

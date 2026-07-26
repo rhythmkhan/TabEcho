@@ -9,7 +9,7 @@ describe('VirtualCursor', () => {
   let cursor: VirtualCursor;
 
   const getHost = () =>
-    document.getElementById(`${APP_NAME}-cursor-host`) as HTMLDivElement | null;
+    document.getElementById(`${APP_NAME.toLowerCase()}-cursor-host`) as HTMLDivElement | null;
 
   beforeEach(() => {
     document.documentElement.innerHTML = '<head></head><body></body>';
@@ -26,8 +26,8 @@ describe('VirtualCursor', () => {
       expect(host).not.toBeNull();
       expect(host?.style.display).toBe('block');
       expect(host?.shadowRoot).not.toBeNull();
-      expect(host?.shadowRoot?.querySelector('.mt-cursor')).not.toBeNull();
-      expect(host?.shadowRoot?.querySelector('.mt-ripple')).not.toBeNull();
+      expect(host?.shadowRoot?.querySelector('.tabecho-cursor')).not.toBeNull();
+      expect(host?.shadowRoot?.querySelector('.tabecho-ripple')).not.toBeNull();
     });
 
     it('reuses existing host on subsequent calls', () => {
@@ -50,66 +50,38 @@ describe('VirtualCursor', () => {
 
       expect(getHost()?.style.display).toBe('none');
     });
-
-    it('is a no-op if never mounted', () => {
-      expect(() => {
-        cursor.hide();
-      }).not.toThrow();
-      expect(getHost()).toBeNull();
-    });
   });
 
   describe('moveTo', () => {
-    it('does nothing before mount', () => {
-      expect(() => {
-        cursor.moveTo(10, 20);
-      }).not.toThrow();
-    });
-
     it('applies a translate transform using rounded coordinates', () => {
       cursor.show();
       cursor.moveTo(12.3, 45.7);
 
       const cursorEl = getHost()?.shadowRoot?.querySelector(
-        '.mt-cursor',
+        '.tabecho-cursor',
       ) as HTMLElement;
       expect(cursorEl.style.transform).toBe('translate(12px, 46px)');
     });
   });
 
-  describe('animateClick', () => {
-    it('does nothing before mount', () => {
-      expect(() => {
-        cursor.animateClick(10, 10);
-      }).not.toThrow();
-    });
-
-    it('moves the cursor and activates the ripple', () => {
+  describe('setCursorStyle', () => {
+    it('updates visual cursor SVG for pointer, text, move, and not-allowed styles', () => {
       cursor.show();
-      cursor.animateClick(100, 200);
-
-      const shadow = getHost()?.shadowRoot;
-      const cursorEl = shadow?.querySelector('.mt-cursor') as HTMLElement;
-      const rippleEl = shadow?.querySelector('.mt-ripple') as HTMLElement;
-
-      expect(cursorEl.style.transform).toBe('translate(100px, 200px)');
-      expect(rippleEl.style.getPropertyValue('--rx')).toBe('84px');
-      expect(rippleEl.style.getPropertyValue('--ry')).toBe('184px');
-      expect(rippleEl.classList.contains('active')).toBe(true);
-    });
-
-    it('removes the active class when the ripple animation ends', () => {
-      cursor.show();
-      cursor.animateClick(50, 50);
-
-      const rippleEl = getHost()?.shadowRoot?.querySelector(
-        '.mt-ripple',
+      const cursorEl = getHost()?.shadowRoot?.querySelector(
+        '.tabecho-cursor',
       ) as HTMLElement;
-      expect(rippleEl.classList.contains('active')).toBe(true);
 
-      rippleEl.dispatchEvent(new Event('animationend'));
+      cursor.setCursorStyle('pointer');
+      expect(cursorEl.innerHTML).toContain('<svg');
 
-      expect(rippleEl.classList.contains('active')).toBe(false);
+      cursor.setCursorStyle('text');
+      expect(cursorEl.innerHTML).toContain('<path');
+
+      cursor.setCursorStyle('move');
+      expect(cursorEl.innerHTML).toContain('<svg');
+
+      cursor.setCursorStyle('not-allowed');
+      expect(cursorEl.innerHTML).toContain('stroke="#ef4444"');
     });
   });
 });

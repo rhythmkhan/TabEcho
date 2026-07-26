@@ -1,87 +1,53 @@
-<h1 align="center">MirrorTab</h1>
+# TabEcho
 
-<p align="center">
-  <img src="public/logo.png" alt="mirror-tab-logo" width="120px" height="120px"/>
-  <br>
-  <em>Mirror DOM interactions from a source tab to a target tab in real time.</em>
-  <br>
-</p>
+> **One Action. Every Tab.**
 
-<p align="center">
-  <a href="CONTRIBUTING.md">Contributing Guidelines</a>
-  ·
-  <a href="https://github.com/KostaD02/MirrorTab/issues">Submit an Issue</a>
-  ·
-  <a href="https://chromewebstore.google.com/detail/mirrortab/bljopdbabofhephejfdlmclnjjipihpb">Chrome Web Store</a>
-  <br>
-</p>
+TabEcho is a Chrome extension designed for real-time interaction synchronization. It allows a user to select one existing browser tab as the **Source** and multiple tabs (**Targets**) across any number of Chrome windows within the same browser profile. Actions performed in the Source tab are captured live and synchronized instantly to all selected Target tabs.
 
-<p align="center">
-  <a href="https://github.com/KostaD02/MirrorTab/actions/workflows/ci.yml"><img src="https://github.com/KostaD02/MirrorTab/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-</p>
+![TabEcho Control Center](public/icon128.png)
 
-MirrorTab is a Chrome extension that captures user interactions on one browser tab (the **source**) and replays them live on one or more target tabs. It supports clicks, keyboard input, form changes, scrolling, and mouse movement - with session recording and export built in.
+## Key Features
 
-## Features
+- **Multi-Window & Multi-Target Sync**: Synchronize actions from 1 Source tab to up to 32 Target tabs across multiple Chrome windows.
+- **Pure Real-Time Synchronization**: Instant propagation of clicks, double-clicks, typing, checkboxes, radio buttons, select dropdowns, contenteditable text, scrolling, and mouse movements.
+- **Escape-to-Pause**: Press `Escape` on the Source webpage to immediately pause synchronization with visual status overlays (`TABECHO PAUSED`).
+- **Dual Shortcut System**: Supports both page-level hotkeys (`Esc`, `F8`, `F9`, `F10`, `Ctrl+Shift+F12`) and browser-level Chrome Extension Commands.
+- **Generation-Based Session Guard**: Ensures actions taken while paused are never replayed upon resuming.
+- **100% Local & Privacy-Conscious**: Zero telemetry, no cloud backend, no account required. Sensitive fields (passwords, payment cards, file inputs) are automatically masked and never transmitted.
 
-- **Live mirroring** - clicks, inputs, keystrokes, scroll events, and mouse movement are forwarded from the source tab to every target tab in real time
-- **Multi-target sync** - mirror a single source to multiple targets at once; add up to 10 target URLs per session and manage each one independently
-- **Ghost cursor** - a virtual cursor on the target tab shows exactly where the source user is pointing and clicking
-- **Session control** - start, pause, resume, and stop a mirroring session from the popup
-- **Role badges** - a floating badge on each tab shows whether it is SOURCE or TARGET
-- **Session recording** - all events replayed on the target tab are recorded with timestamps
-- **Export** - download the recorded session as JSON or plain text before or after stopping
-- **Standalone Replay Engine** - upload previously exported session files to an isolated Replay tab to automatically replay all recorded user actions with full playback controls (play, pause, stop, adjust speed)
-- **Smart selector** - elements with an `id` are resolved via `#id`; all others use a full structural CSS path, keeping replay accurate across DOM changes
+## Quick Installation (Load Unpacked)
 
-The production bundle can be downloaded from [releases](https://github.com/KostaD02/MirrorTab/releases).
+1. Clone or download the repository.
+2. Build the project:
+   ```bash
+   pnpm install
+   pnpm build
+   ```
+3. Open Chrome and navigate to `chrome://extensions`.
+4. Enable **Developer mode** in the top-right corner.
+5. Click **Load unpacked** and select the `dist/` folder.
 
-## Usage
+## How to Use
 
-1. Click the **MirrorTab** icon in the Chrome toolbar to open the popup
-2. Enter a **Source URL** and one or more **Target URLs** (click **+ Add Target** for additional targets)
-3. Click **Start Session** - the source tab and all target tabs will open automatically
-4. Interact with the **SOURCE** tab; every action is mirrored to all **TARGET** tabs in real time
-5. Use **Pause / Resume** to temporarily suspend mirroring without closing the session
-6. Remove individual targets from an active session without stopping the whole session
-7. Use **Download JSON** or **Download Text** to export the full event log from each target tab at any time
-8. Click **Stop** to end the entire session - recorded events are cleared
+1. Click the **TabEcho icon** in the Chrome toolbar or open the **Control Center** (`src/manager/index.html`).
+2. Select **1 Source tab** using the radio button.
+3. Select **1 or more Target tabs** using the checkboxes (across any open Chrome window).
+4. Click **⚡ Start Live Sync**.
+5. Perform actions on your Source tab—watch all Target tabs replicate your actions in real time!
+6. Press **Escape** or **F8** to Pause or Resume at any time.
 
-### Replaying a saved session
+## Documentation Links
 
-1. Click the **Replay Page** button in the MirrorTab extension popup
-2. Upload your downloaded `.json` or `.txt` session log file
-3. Enter the URL of the environment you want to test the replay on
-4. Click **Start** to spawn the Replay tab and watch the automated execution
-
-## Recorded event format
-
-Each entry in the exported session log contains:
-
-| Field                | Description                                                                       |
-| -------------------- | --------------------------------------------------------------------------------- |
-| `timestamp`          | ISO 8601 timestamp of when the event was replayed                                 |
-| `type`               | Event type: `click`, `input`, `change`, `keydown`, `keyup`, `scroll`, `mousemove` |
-| `selector`           | Compact element identifier: `TAG#id#firstClass#attr=val`                          |
-| `selectorStackTrace` | Full CSS structural path used for DOM resolution                                  |
-| `content`            | Event-specific payload (coordinates, value, key info, scroll position)            |
-
-## Permissions
-
-| Permission | Reason                                                                   |
-| ---------- | ------------------------------------------------------------------------ |
-| `storage`  | Persist the active session and recordings across service worker restarts |
-
-## Contributing
-
-Bug reports and feature requests are welcome via [GitHub Issues](https://github.com/KostaD02/MirrorTab/issues).
-
-Please refer to our [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct, development setup, and the process for submitting pull requests to us.
-
-## Security
-
-Please review our [Security Policy](SECURITY.md) for information on supported versions and details regarding how to responsibly report security vulnerabilities.
+- [Installation Guide](INSTALLATION.md)
+- [Usage & Shortcuts](USAGE.md)
+- [Architecture Overview](ARCHITECTURE.md)
+- [Privacy Policy](PRIVACY_POLICY.md)
+- [Security Policy](SECURITY.md)
+- [Attribution Notice](ATTRIBUTION.md)
+- [Browser Limitations](LIMITATIONS.md)
+- [Testing Guide](TESTING.md)
 
 ## License
 
-[MIT](./LICENSE) © Konstantine Datunishvili
+TabEcho is licensed under the [MIT License](LICENSE).  
+Based on MirrorTab by Konstantine Datunishvili (see [ATTRIBUTION.md](ATTRIBUTION.md)).

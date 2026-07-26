@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TabEcho Control Center</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Header -->
+      <header class="header">
+        <div class="brand">
+          <img src="../../public/icon48.png" alt="TabEcho Logo" class="brand-logo" />
+          <div>
+            <h1 class="brand-title">TabEcho</h1>
+            <p class="brand-tagline">One Action. Every Tab.</p>
+          </div>
+        </div>
+        <div class="session-badge-container">
+          <span id="sessionStatusBadge" class="status-badge status-idle">IDLE</span>
+          <span id="sessionSummary" class="session-summary">No active session</span>
+        </div>
+      </header>
+
+      <!-- Main Controls Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-actions">
+          <button id="btnStart" class="btn btn-primary">⚡ Start Live Sync</button>
+          <button id="btnPause" class="btn btn-warning" disabled>⏸ Pause (Esc)</button>
+          <button id="btnResume" class="btn btn-success" disabled>▶ Resume (F8)</button>
+          <button id="btnStop" class="btn btn-danger" disabled>⏹ Stop (F10)</button>
+          <button id="btnEmergencyStop" class="btn btn-emergency">🚨 Emergency Stop</button>
+        </div>
+        <div class="toolbar-secondary">
+          <button id="btnRefreshTabs" class="btn btn-outline">🔄 Refresh Tabs</button>
+          <button id="btnToggleSettings" class="btn btn-outline">⚙ Settings & Shortcuts</button>
+        </div>
+      </div>
+
+      <div id="validationAlert" class="alert alert-error" hidden></div>
+
+      <!-- Main Content Layout -->
+      <main class="main-layout">
+        <!-- Left: Tab Picker Matrix -->
+        <section class="panel tab-picker-panel">
+          <div class="panel-header">
+            <h2>Select Source & Target Tabs</h2>
+            <div class="quick-selectors">
+              <button id="btnSelectActiveSource" class="btn btn-xs btn-outline">Use Active Tab as Source</button>
+              <button id="btnClearTargets" class="btn btn-xs btn-outline">Clear Targets</button>
+            </div>
+          </div>
+
+          <div id="windowGroupsContainer" class="window-groups">
+            <div class="loading-spinner">Loading browser tabs...</div>
+          </div>
+        </section>
+
+        <!-- Right Side: Health & Settings -->
+        <aside class="sidebar">
+          <!-- Target Health Panel -->
+          <section class="panel health-panel">
+            <div class="panel-header">
+              <h3>Target Health & Diagnostics</h3>
+            </div>
+            <div id="targetHealthList" class="target-health-list">
+              <p class="empty-text">Start a session to monitor target health.</p>
+            </div>
+          </section>
+
+          <!-- Settings & Shortcut Panel -->
+          <section id="settingsPanel" class="panel settings-panel">
+            <div class="panel-header">
+              <h3>Shortcuts & Configuration</h3>
+            </div>
+
+            <div class="settings-group">
+              <label for="maxTargetsInput" class="setting-label">
+                Default Target Capacity (1–32):
+                <input type="number" id="maxTargetsInput" min="1" max="32" value="8" class="input-num" />
+              </label>
+              <p class="setting-hint">Hard safety cap: 32 targets.</p>
+            </div>
+
+            <div class="settings-group">
+              <label for="escapeBehaviorSelect" class="setting-label">
+                Escape Key Behavior:
+                <select id="escapeBehaviorSelect" class="select-input">
+                  <option value="hard-intercept" selected>Hard Intercept (Pause TabEcho & Consume Key)</option>
+                  <option value="pause-and-propagate">Pause & Propagate to Source Page</option>
+                  <option value="disabled">Disabled (Use F9 / Extension Command)</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="settings-group">
+              <h4>Page-Level Shortcuts (Source Tab Focus)</h4>
+              <ul class="shortcut-list">
+                <li><span>Pause Sync</span> <kbd>Esc</kbd></li>
+                <li><span>Resume Sync</span> <kbd>F8</kbd></li>
+                <li><span>Toggle Pause/Resume</span> <kbd>F9</kbd></li>
+                <li><span>Stop Session</span> <kbd>F10</kbd></li>
+                <li><span>Emergency Stop</span> <kbd>Ctrl+Shift+F12</kbd></li>
+              </ul>
+            </div>
+
+            <div class="settings-group">
+              <h4>Browser Extension Commands (Global)</h4>
+              <ul class="shortcut-list">
+                <li><span>Toggle Pause/Resume</span> <kbd>Ctrl+Shift+P</kbd></li>
+                <li><span>Resume Sync</span> <kbd>Ctrl+Shift+R</kbd></li>
+                <li><span>Stop Session</span> <kbd>Ctrl+Shift+S</kbd></li>
+                <li><span>Emergency Stop</span> <kbd>Ctrl+Shift+X</kbd></li>
+              </ul>
+              <p class="setting-hint">Configure via <code>chrome://extensions/shortcuts</code></p>
+            </div>
+          </section>
+        </aside>
+      </main>
+    </div>
+    <script type="module" src="main.ts"></script>
+  </body>
+</html>

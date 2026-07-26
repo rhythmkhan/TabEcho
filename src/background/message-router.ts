@@ -1,10 +1,9 @@
 import {
   ExtensionMessage,
   ExtensionMessageTypeEnum,
-  SessionRoleEnum,
 } from '@/shared/types';
-import { openTab, sendRoleToTab, waitForTabLoad } from '@/shared/util';
 import { SessionManager } from './session-manager';
+import { queryEligibleTabs } from './tab-discovery';
 
 export function createMessageRouter(sessionManager: SessionManager): void {
   chrome.runtime.onMessage.addListener(
@@ -15,12 +14,12 @@ export function createMessageRouter(sessionManager: SessionManager): void {
     ) => {
       switch (message.type) {
         case ExtensionMessageTypeEnum.StartSession: {
-          sessionManager.start(message.payload, sendResponse);
+          void sessionManager.start(message.payload, sendResponse);
           return true;
         }
 
         case ExtensionMessageTypeEnum.PauseSession: {
-          sessionManager.pause().then(() => {
+          void sessionManager.pause(message.reason).then(() => {
             sendResponse({
               type: ExtensionMessageTypeEnum.SessionStatus,
               payload: sessionManager.currentSession,
@@ -30,7 +29,7 @@ export function createMessageRouter(sessionManager: SessionManager): void {
         }
 
         case ExtensionMessageTypeEnum.ResumeSession: {
-          sessionManager.resume().then(() => {
+          void sessionManager.resume(message.reason).then(() => {
             sendResponse({
               type: ExtensionMessageTypeEnum.SessionStatus,
               payload: sessionManager.currentSession,
@@ -40,8 +39,23 @@ export function createMessageRouter(sessionManager: SessionManager): void {
         }
 
         case ExtensionMessageTypeEnum.StopSession: {
-          sessionManager.stop();
-          break;
+          void sessionManager.stop(message.reason).then(() => {
+            sendResponse({
+              type: ExtensionMessageTypeEnum.SessionStatus,
+              payload: sessionManager.currentSession,
+            });
+          });
+          return true;
+        }
+
+        case ExtensionMessageTypeEnum.EmergencyStop: {
+          void sessionManager.emergencyStop(message.reason).then(() => {
+            sendResponse({
+              type: ExtensionMessageTypeEnum.SessionStatus,
+              payload: sessionManager.currentSession,
+            });
+          });
+          return true;
         }
 
         case ExtensionMessageTypeEnum.GetSession: {
@@ -52,21 +66,18 @@ export function createMessageRouter(sessionManager: SessionManager): void {
           break;
         }
 
-        case ExtensionMessageTypeEnum.DomEvent: {
-          const session = sessionManager.currentSession;
-          if (!session || session.isPaused) break;
-          if (sender.tab?.id !== session.sourceTabId) break;
-          for (const targetTabId of session.targetTabIds) {
-            chrome.tabs.sendMessage(targetTabId, {
-              type: ExtensionMessageTypeEnum.ReplayEvent,
-              payload: message.payload,
+        case ExtensionMessageTypeEnum.GetEligibleTabs: {
+          void queryEligibleTabs().then((tabs) => {
+            sendResponse({
+              type: ExtensionMessageTypeEnum.TabSummaryResponse,
+              payload: tabs,
             });
-          }
-          break;
+          });
+          return true;
         }
 
         case ExtensionMessageTypeEnum.RemoveTarget: {
-          sessionManager.removeTarget(message.payload.targetTabId).then(() => {
+          void sessionManager.removeTarget(message.payload.targetTabId).then(() => {
             sendResponse({
               type: ExtensionMessageTypeEnum.SessionStatus,
               payload: sessionManager.currentSession,
@@ -75,43 +86,81 @@ export function createMessageRouter(sessionManager: SessionManager): void {
           return true;
         }
 
-        case ExtensionMessageTypeEnum.StartReplay: {
-          openTab(message.payload.url)
-            .then((tab) => {
-              const targetTabId = Number(tab.id);
-              if (isNaN(targetTabId)) {
-                throw new Error('Failed to create replay tab');
-              }
-              return waitForTabLoad(targetTabId).then(() => targetTabId);
-            })
-            .then((targetTabId) => {
-              return sendRoleToTab(targetTabId, SessionRoleEnum.Replay).then(
-                () => targetTabId,
-              );
-            })
-            .then((targetTabId) => {
-              sendResponse({
-                type: ExtensionMessageTypeEnum.ReplayReady,
-                payload: { targetTabId },
-              });
-            })
-            .catch(() => {
-              sendResponse({
-                type: ExtensionMessageTypeEnum.SessionError,
-                error: 'Failed to open replay tab',
-              });
-            });
-          return true;
-        }
-
-        case ExtensionMessageTypeEnum.StopReplay: {
-          sendRoleToTab(message.payload.targetTabId, SessionRoleEnum.Idle);
+        case ExtensionMessageTypeEnum.RequestHotkeyAction: {
+          const { action, reason } = message;
+          if (action === 'PAUSE') {
+            void sessionManager.pause(reason);
+          } else if (action === 'RESUME') {
+            void sessionManager.resume(reason);
+          } else if (action === 'TOGGLE_PAUSE') {
+            const current = sessionManager.currentSession;
+            if (current?.isPaused) {
+              void sessionManager.resume(reason);
+            } else {
+              void sessionManager.pause(reason);
+            }
+          } else if (action === 'STOP') {
+            void sessionManager.stop(reason);
+          } else {
+            void sessionManager.emergencyStop(reason);
+          }
           break;
         }
 
-        default: {
+        case ExtensionMessageTypeEnum.LiveSyncEvent: {
+          const session = sessionManager.currentSession;
+          if (!session || session.isPaused) break;
+          if (sender.tab?.id !== session.sourceTabId) break;
+
+          const event = message.payload;
+          if (event.generation !== session.generation) break;
+
+          event.sequence = sessionManager.getNextSequence();
+
+          const jsonString = JSON.stringify(event);
+          if (jsonString.length > 102400) {
+            break;
+          }
+
+          const promises = session.targetTabIds.map(async (targetTabId) => {
+            const targetState = session.targetStates[targetTabId];
+            const delay = targetState.delayMs;
+
+            if (delay > 0) {
+              await new Promise((resolve) => setTimeout(resolve, delay));
+            }
+
+            try {
+              await chrome.tabs.sendMessage(targetTabId, {
+                type: ExtensionMessageTypeEnum.LiveSyncEvent,
+                payload: event,
+              });
+            } catch {
+              sessionManager.targetHealth.processAck({
+                eventId: event.eventId,
+                sequence: event.sequence,
+                generation: event.generation,
+                tabId: targetTabId,
+                success: false,
+                durationMs: 0,
+                errorCode: 'DELIVERY_FAILED',
+                errorMessage: 'Could not send message to tab',
+              });
+            }
+          });
+
+          void Promise.allSettled(promises);
           break;
         }
+
+        case ExtensionMessageTypeEnum.ReplayAck: {
+          const ack = message.payload;
+          sessionManager.targetHealth.processAck(ack);
+          break;
+        }
+
+        default:
+          break;
       }
     },
   );

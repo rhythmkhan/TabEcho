@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <rect width="128" height="128" rx="24" fill="#12121c"/>
+  <rect x="2" y="2" width="124" height="124" rx="22" stroke="#6366f1" stroke-width="4" fill="none"/>
+  <!-- Tab card -->
+  <path d="M 28 36 L 60 36 L 66 44 L 100 44 A 6 6 0 0 1 106 50 L 106 94 A 6 6 0 0 1 100 100 L 28 100 A 6 6 0 0 1 22 94 L 22 42 A 6 6 0 0 1 28 36 Z" fill="#1e2034" stroke="#818cf8" stroke-width="4"/>
+  <!-- Echo waves -->
+  <path d="M 70 54 A 20 20 0 0 1 90 74" stroke="#38bdf8" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 76 46 A 30 30 0 0 1 106 76" stroke="#38bdf8" stroke-dasharray="8 4" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+  <path d="M 82 38 A 40 40 0 0 1 118 74" stroke="#818cf8" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+</svg>

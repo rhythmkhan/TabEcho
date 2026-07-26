@@ -3,228 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MirrorTab - Session Setup</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <title>TabEcho</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <div id="app" class="d-flex flex-col">
-      <header class="header d-flex items-center justify-between">
-        <div class="logo-lockup d-flex items-center">
-          <div class="logo-text d-flex flex-col">
-            <span class="logo-name">MirrorTab</span>
-            <div class="logo-sub d-flex items-center">
-              <span class="logo-tagline">DOM interaction mirroring</span>
-              <span id="version" class="logo-version">vX.X.X</span>
-            </div>
+    <div id="app" class="popup-container">
+      <header class="header">
+        <div class="brand">
+          <img src="../../public/icon32.png" alt="" class="logo" />
+          <div>
+            <h1 class="title">TabEcho</h1>
+            <p class="tagline">One Action. Every Tab.</p>
           </div>
         </div>
-        <div class="header-right d-flex items-center">
-          <button
-            id="info-btn"
-            class="icon-btn info-btn d-flex items-center justify-center"
-            type="button"
-            aria-label="About MirrorTab"
-            title="About MirrorTab"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 640 640"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                d="M320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320C64 461.4 178.6 576 320 576zM288 224C288 206.3 302.3 192 320 192C337.7 192 352 206.3 352 224C352 241.7 337.7 256 320 256C302.3 256 288 241.7 288 224zM280 288L328 288C341.3 288 352 298.7 352 312L352 400L360 400C373.3 400 384 410.7 384 424C384 437.3 373.3 448 360 448L280 448C266.7 448 256 437.3 256 424C256 410.7 266.7 400 280 400L304 400L304 336L280 336C266.7 336 256 325.3 256 312C256 298.7 266.7 288 280 288z"
-              />
-            </svg>
-          </button>
-          <button
-            id="info-close-btn"
-            class="icon-btn info-close-btn d-flex items-center justify-center"
-            type="button"
-            aria-label="Close info"
-            hidden
-          >
-            ✕
-          </button>
-          <div
-            id="status-pill"
-            class="status-pill status-idle d-flex items-center"
-          >
-            <span class="status-dot"></span>
-            <span id="status-label">Idle</span>
-          </div>
-        </div>
+        <span id="statusBadge" class="status-badge status-idle">IDLE</span>
       </header>
 
-      <form id="session-form" class="session-form d-flex flex-col" novalidate>
-        <div class="field-group d-flex flex-col">
-          <label class="field-label d-flex items-center" for="source-url">
-            <span class="field-icon">🔴</span> Source URL
-          </label>
-          <input
-            id="source-url"
-            class="field-input"
-            type="url"
-            placeholder="https://example.com"
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <span class="field-hint">Interactions here will be mirrored</span>
-          <span
-            id="source-error"
-            class="field-error"
-            role="alert"
-            hidden
-          ></span>
+      <main class="main-content">
+        <div id="sessionSummaryCard" class="summary-card">
+          <p id="summaryText" class="summary-text">No active live session</p>
         </div>
 
-        <div class="targets-section d-flex flex-col">
-          <div id="target-list" class="target-list d-flex flex-col"></div>
-          <button
-            id="add-target-btn"
-            class="btn-add-target d-flex items-center justify-center"
-            type="button"
-          >
-            + Add Target
+        <div class="actions">
+          <button id="btnOpenControlCenter" class="btn btn-primary btn-block">
+            🖥 Open TabEcho Control Center
           </button>
-        </div>
 
-        <p id="error-msg" class="error-msg" role="alert" hidden></p>
-
-        <button
-          id="start-btn"
-          class="btn-primary d-flex items-center justify-center"
-          type="submit"
-        >
-          <span id="btn-label">Start Session</span>
-          <span id="btn-spinner" class="spinner" hidden></span>
-        </button>
-      </form>
-
-      <div id="active-card" class="active-card d-flex flex-col" hidden>
-        <div class="active-source-row d-flex flex-col">
-          <span class="active-role source">SOURCE</span>
-          <span id="active-source" class="active-url"></span>
-        </div>
-        <div class="active-targets-section d-flex flex-col">
-          <span class="active-targets-label">TARGETS</span>
-          <div id="active-targets-list" class="active-targets-list d-flex flex-col"></div>
-        </div>
-        <div class="active-actions d-flex">
-          <button
-            id="pause-btn"
-            class="btn-pause d-flex items-center justify-center"
-            type="button"
-          >
-            <span id="pause-icon">⏸</span>
-            <span id="pause-label">Pause</span>
-          </button>
-          <button id="stop-btn" class="btn-danger" type="button">✕ Stop</button>
-        </div>
-        <div class="download-actions d-flex flex-col">
-          <p>Download session data:</p>
-          <div class="download-buttons d-flex">
-            <a id="download-json" class="link-underline" role="button"
-              >Download JSON</a
-            >
-            <a id="download-text" class="link-underline" role="button"
-              >Download Text</a
-            >
+          <div class="btn-group">
+            <button id="btnPauseResume" class="btn btn-warning" disabled>
+              ⏸ Pause
+            </button>
+            <button id="btnEmergencyStop" class="btn btn-danger" disabled>
+              🚨 Stop
+            </button>
           </div>
         </div>
-      </div>
+      </main>
 
-      <div id="info-panel" class="info-panel d-flex flex-col" hidden>
-        <p class="info-desc">
-          MirrorTab mirrors DOM interactions: clicks, inputs, keystrokes, and
-          scrolls from a <strong>Source</strong> tab to a
-          <strong>Target</strong> tab in real time. Perfect for demos, testing,
-          and live presentations.
-        </p>
-
-        <ol class="info-steps d-flex flex-col">
-          <li>
-            Enter a <strong>Source URL</strong> and a
-            <strong>Target URL</strong>.
-          </li>
-          <li>
-            Click <strong>Start Session</strong> - two tabs open automatically.
-          </li>
-          <li>
-            Interact with the <span class="ib source">SOURCE</span> tab, actions
-            mirror live to the <span class="ib target">TARGET</span> tab.
-          </li>
-          <li>
-            Use <strong>Pause / Resume</strong> or <strong>Stop</strong> to
-            control the session.
-          </li>
-          <li>
-            Download the event log as <strong>JSON</strong> or
-            <strong>Text</strong> any time.
-          </li>
-        </ol>
-
-        <div class="info-links d-flex flex-col items-center">
-          <div class="info-link-row d-flex items-baseline">
-            <a
-              href="https://github.com/KostaD02/MirrorTab"
-              target="_blank"
-              rel="noopener"
-              class="link-underline repo-link"
-            >
-              GitHub Repository</a
-            >
-            <a
-              href="https://github.com/KostaD02/MirrorTab/stargazers"
-              target="_blank"
-              rel="noopener"
-              class="link-underline star-link"
-              >Star on GitHub</a
-            >
-          </div>
-          <div class="info-link-row d-flex items-baseline">
-            <a
-              href="https://github.com/KostaD02/MirrorTab/issues/new/choose"
-              target="_blank"
-              rel="noopener"
-              class="link-underline issue-link"
-              >Report Issue / Feature</a
-            >
-          </div>
-        </div>
-
-        <p class="info-credit">
-          Created by
-          <a
-            href="https://konstantinedatunishvili.com/"
-            target="_blank"
-            rel="noopener"
-            class="link-underline website-link"
-            >Konstantine Datunishvili</a
-          >
-        </p>
-      </div>
-
-      <div
-        id="replay-link-container"
-        class="replay-link-container d-flex justify-center"
-      >
-        <a id="replay-link" class="link-underline replay-link" role="button"
-          >🔄 Open Session Replay</a
-        >
-      </div>
-
-      <footer id="app-footer" class="footer">
-        Clicks · Inputs · Scrolls · Keystrokes
+      <footer class="footer">
+        Live Sync · Multi-Window · Local Only
       </footer>
     </div>
-
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

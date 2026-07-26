@@ -1,33 +1,50 @@
-import { sendRoleToTab } from '@/shared/util';
 import { createMessageRouter } from './message-router';
 import { SessionManager } from './session-manager';
-import { SessionRoleEnum } from '@/shared/types';
+import { setupTabLifecycle } from './tab-lifecycle';
 
 const sessionManager = new SessionManager();
 
-sessionManager.restore();
+void sessionManager.restore();
 
+setupTabLifecycle(sessionManager);
 createMessageRouter(sessionManager);
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  const session = sessionManager.currentSession;
-  if (!session || session.isPaused) return;
-  if (changeInfo.status !== 'complete') return;
+// Handle Chrome Extension Commands
+chrome.commands.onCommand.addListener((command) => {
+  switch (command) {
+    case 'tabecho-toggle-pause': {
+      const current = sessionManager.currentSession;
+      if (current?.isPaused) {
+        void sessionManager.resume('chrome-command');
+      } else {
+        void sessionManager.pause('chrome-command');
+      }
+      break;
+    }
 
-  if (tabId === session.sourceTabId) {
-    sendRoleToTab(tabId, SessionRoleEnum.Source);
-  } else if (session.targetTabIds.includes(tabId)) {
-    sendRoleToTab(tabId, SessionRoleEnum.Target);
-  }
-});
+    case 'tabecho-resume': {
+      void sessionManager.resume('chrome-command');
+      break;
+    }
 
-chrome.tabs.onRemoved.addListener((tabId) => {
-  const session = sessionManager.currentSession;
-  if (!session) return;
+    case 'tabecho-stop': {
+      void sessionManager.stop('chrome-command');
+      break;
+    }
 
-  if (tabId === session.sourceTabId) {
-    sessionManager.stop();
-  } else if (session.targetTabIds.includes(tabId)) {
-    sessionManager.removeTarget(tabId);
+    case 'tabecho-emergency-stop': {
+      void sessionManager.emergencyStop('chrome-command');
+      break;
+    }
+
+    case 'tabecho-open-control-center': {
+      void chrome.tabs.create({
+        url: chrome.runtime.getURL('src/manager/index.html'),
+      });
+      break;
+    }
+
+    default:
+      break;
   }
 });

@@ -1,9 +1,10 @@
 {
-  "name": "mirrortab",
+  "name": "tabecho",
   "type": "module",
-  "version": "1.3.1",
+  "version": "0.1.0",
+  "description": "Synchronize clicks, inputs, scrolling, and other supported interactions from one browser tab to multiple selected tabs across Chrome windows.",
   "private": true,
-  "author": "Konstantine datunishvili",
+  "author": "TabEcho Contributors",
   "license": "MIT",
   "scripts": {
     "prepare": "husky",

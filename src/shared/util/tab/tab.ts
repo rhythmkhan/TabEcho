@@ -1,11 +1,12 @@
+import { MAX_RETRY_ATTEMPTS, RETRY_DELAY_MS } from '../../consts';
 import {
   ExtensionMessage,
   ExtensionMessageTypeEnum,
+  LiveSessionStatus,
   SessionRole,
 } from '../../types';
-import { normaliseUrl } from '../url/url';
-import { MAX_RETRY_ATTEMPTS, RETRY_DELAY_MS } from '../../consts';
 import { logger } from '../logger/logger';
+import { normaliseUrl } from '../url/url';
 
 export async function openTab(url: string): Promise<chrome.tabs.Tab> {
   return chrome.tabs.create({ url: normaliseUrl(url), active: false });
@@ -33,10 +34,16 @@ export async function waitForTabLoad(tabId: number): Promise<void> {
 export async function sendRoleToTab(
   tabId: number,
   role: SessionRole,
+  generation = 0,
+  status: LiveSessionStatus = 'idle',
+  isPaused = false,
 ): Promise<void> {
   const msg: ExtensionMessage = {
     type: ExtensionMessageTypeEnum.SetRole,
     role,
+    generation,
+    status,
+    isPaused,
   };
 
   for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {

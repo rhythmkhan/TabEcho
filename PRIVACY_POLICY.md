@@ -1,52 +1,20 @@
-# Privacy Policy — MirrorTab
+# TabEcho Privacy Policy
 
-**Last updated:** March 9, 2026
+**Last Updated: July 2026**
 
-## Overview
+TabEcho is designed with strict local privacy principles.
 
-MirrorTab is a browser extension that mirrors DOM interactions (clicks, keyboard input, scrolling, and form changes) from one browser tab to another in real time, and allows you to faithfully replay exported interaction logs.
+## Summary
 
-**MirrorTab does not collect, store, transmit, or share any personal data or user data of any kind.**
+- **No Remote Servers**: TabEcho operates 100% locally within your Chrome browser profile.
+- **No Data Collection**: We do not collect, store, or transmit your browsing history, keystrokes, personal information, or interaction data.
+- **No Telemetry / Analytics**: There are no third-party analytics, crash reporting, or tracking scripts.
+- **No Recording**: TabEcho is a live-only synchronization tool. No interaction logs are saved or exported to disk or memory.
 
----
+## Permissions Table
 
-## Data the extension does NOT collect ANYTHING
-
-- No browsing history
-- No page content or URLs beyond what you explicitly type into the extension popup
-- No keystrokes or form values are stored outside your own browser
-- No analytics, telemetry, or crash reporting
-- No account registration or login of any kind
-
----
-
-## How the extension works locally
-
-All processing happens entirely on your device:
-
-| What                                                    | Where it stays                                                                                   |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Session configuration (source URL, target URL, tab IDs) | `chrome.storage.local` on your device only                                                       |
-| Captured DOM events forwarded between tabs              | Passed in-memory via `chrome.runtime` messaging; never written to disk or sent to any server     |
-| Downloaded session logs (JSON / text)                   | Saved to your local filesystem by your browser when you click Download; not transmitted anywhere |
-| Uploaded session logs for replay                        | Parsed strictly in-memory within your browser; never transmitted to any external server          |
-
-The extension communicates solely between the browser's own internal extension APIs (`chrome.tabs`, `chrome.scripting`, `chrome.storage`, `chrome.runtime`). No external servers, APIs, or third-party services are contacted.
-
----
-
-## External resources
-
-The extension popup loads the **Poppins** typeface from Google Fonts (`fonts.googleapis.com`) for display purposes only. This is a standard CSS stylesheet request made by your browser. No extension data is included in this request. Refer to [Google's Privacy Policy](https://policies.google.com/privacy) for how Google handles font requests.
-
----
-
-## Changes to this policy
-
-If the extension is updated in a way that changes how data is handled, this document will be updated and the "Last updated" date above will change.
-
----
-
-## Contact
-
-For questions or concerns, open an issue at [github.com/KostaD02/MirrorTab](https://github.com/KostaD02/MirrorTab/issues) or contact me at [konstantine@datunishvili.ge](mailto:konstantine@datunishvili.ge)
+| Permission | Purpose | Data Accessed | Stored? |
+|------------|---------|---------------|---------|
+| `storage` | Persist live session options and settings | Active session tab IDs | Local Chrome profile only |
+| `tabs` | Tab Picker display (window grouping, tab names, favicons) | Tab titles, URLs, favicons | No (memory only during picker) |
+| `scripting` | Dynamic content script injection into selected tabs | Selected tab DOM | No |

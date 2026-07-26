@@ -1,4 +1,14 @@
+export {
+  APP_NAME,
+  DEFAULT_MAX_TARGETS,
+  ELEMENT_RESOLVE_RETRY_INTERVAL_MS,
+  ELEMENT_RESOLVE_TIMEOUT_MS,
+  HARD_MAX_TARGETS,
+} from './config';
 export { MAX_RETRY_ATTEMPTS, RETRY_DELAY_MS } from './retry';
-export { STORAGE_KEY, INPUT_STORAGE_KEY, RECORDS_STORAGE_KEY } from './storage';
-export { APP_NAME, REPLAY_SPEEDS } from './config';
-export type { ReplaySpeed } from './config';
+export {
+  INPUT_STORAGE_KEY,
+  PRESETS_STORAGE_KEY,
+  SETTINGS_STORAGE_KEY,
+  STORAGE_KEY,
+} from './storage';

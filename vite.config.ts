@@ -13,12 +13,12 @@ export default defineConfig({
   },
   plugins: [
     crx({ manifest }),
-    zip({ outDir: 'release', outFileName: `MirrorTab-${version}.zip` }),
+    zip({ outDir: 'releases', outFileName: `tabecho-v${version}.zip` }),
   ],
   build: {
     rollupOptions: {
       input: {
-        replay: 'src/replay/index.html',
+        manager: 'src/manager/index.html',
       },
     },
   },
