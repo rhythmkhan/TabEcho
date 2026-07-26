@@ -306,30 +306,54 @@ export class EventApplier {
             Object.defineProperty(kbEvent, 'which', { value: 13 });
           }
 
-          const defaultNotPrevented = element.dispatchEvent(kbEvent);
+          element.dispatchEvent(kbEvent);
 
-          if (type === LiveSyncEventTypeEnum.Keydown && isEnter && defaultNotPrevented) {
-            if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement) {
-              const form = element.form || element.closest('form');
-              if (form) {
-                if (typeof form.requestSubmit === 'function') {
-                  try {
-                    form.requestSubmit();
-                  } catch {
+          if (type === LiveSyncEventTypeEnum.Keydown && isEnter) {
+            const kpEvent = new KeyboardEvent('keypress', {
+              bubbles: true,
+              cancelable: true,
+              key: 'Enter',
+              code: kbPayload.code || 'Enter',
+              ctrlKey: kbPayload.ctrlKey,
+              shiftKey: kbPayload.shiftKey,
+              altKey: kbPayload.altKey,
+              metaKey: kbPayload.metaKey,
+            });
+            Object.defineProperty(kpEvent, 'keyCode', { value: 13 });
+            Object.defineProperty(kpEvent, 'which', { value: 13 });
+            Object.defineProperty(kpEvent, 'charCode', { value: 13 });
+            element.dispatchEvent(kpEvent);
+
+            const form = element.closest('form');
+
+            if (form) {
+              const submitBtn = form.querySelector<HTMLElement>(
+                'input[name="btnK"], input[type="submit"], button[type="submit"]',
+              );
+
+              if (submitBtn && typeof submitBtn.click === 'function') {
+                try {
+                  submitBtn.click();
+                } catch {
+                  if (typeof form.requestSubmit === 'function') {
+                    try {
+                      form.requestSubmit();
+                    } catch {
+                      form.submit();
+                    }
+                  } else {
                     form.submit();
                   }
-                } else {
+                }
+              } else if (typeof form.requestSubmit === 'function') {
+                try {
+                  form.requestSubmit();
+                } catch {
                   form.submit();
                 }
+              } else {
+                form.submit();
               }
-            } else if (element instanceof HTMLTextAreaElement) {
-              const val = element.value;
-              const start = element.selectionStart;
-              const end = element.selectionEnd;
-              element.value = val.substring(0, start) + '\n' + val.substring(end);
-              element.selectionStart = element.selectionEnd = start + 1;
-              element.dispatchEvent(new Event('input', { bubbles: true }));
-              element.dispatchEvent(new Event('change', { bubbles: true }));
             } else if (element.tagName === 'BUTTON' || element.getAttribute('role') === 'button') {
               element.click();
             }
