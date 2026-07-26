@@ -12,14 +12,47 @@ export interface ResolveResult {
 
 export async function resolveElement(
   descriptor: ElementDescriptor | null,
+  clickXRatio?: number,
+  clickYRatio?: number,
 ): Promise<ResolveResult | null> {
-  if (!descriptor || descriptor.selectors.length === 0) {
-    return null;
+  if (descriptor && descriptor.selectors.length > 0) {
+    const syncMatch = resolveSync(descriptor);
+    if (syncMatch) return syncMatch;
+
+    const asyncMatch = await waitForMatch(descriptor);
+    if (asyncMatch) return asyncMatch;
   }
 
-  const syncMatch = resolveSync(descriptor);
-  if (syncMatch) return syncMatch;
+  if (clickXRatio !== undefined && clickYRatio !== undefined) {
+    const x = clickXRatio * window.innerWidth;
+    const y = clickYRatio * window.innerHeight;
+    const el = document.elementFromPoint(x, y);
+    if (el) {
+      return { element: el, strategy: 'coordinate' };
+    }
+  }
 
+  return null;
+}
+
+function resolveSync(descriptor: ElementDescriptor): ResolveResult | null {
+  for (const candidate of descriptor.selectors) {
+    try {
+      const elements = Array.from(document.querySelectorAll(candidate.value));
+      for (const el of elements) {
+        if (matchesDescriptor(el, descriptor)) {
+          return { element: el, strategy: candidate.strategy };
+        }
+      }
+    } catch {
+      // safe drop
+    }
+  }
+
+  return null;
+}
+
+function waitForMatch(descriptor: ElementDescriptor): Promise<ResolveResult | null> {
   return new Promise((resolve) => {
     const startTime = Date.now();
     let observer: MutationObserver | null = null;
@@ -53,23 +86,6 @@ export async function resolveElement(
 
     timer = setInterval(check, ELEMENT_RESOLVE_RETRY_INTERVAL_MS);
   });
-}
-
-function resolveSync(descriptor: ElementDescriptor): ResolveResult | null {
-  for (const candidate of descriptor.selectors) {
-    try {
-      const elements = Array.from(document.querySelectorAll(candidate.value));
-      for (const el of elements) {
-        if (matchesDescriptor(el, descriptor)) {
-          return { element: el, strategy: candidate.strategy };
-        }
-      }
-    } catch {
-      // safe drop
-    }
-  }
-
-  return null;
 }
 
 function matchesDescriptor(el: Element, descriptor: ElementDescriptor): boolean {

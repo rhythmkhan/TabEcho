@@ -73,7 +73,19 @@ export class EventApplier {
         return;
       }
 
-      const resolveResult = await resolveElement(target);
+      const mousePayload = (type === LiveSyncEventTypeEnum.Click ||
+        type === LiveSyncEventTypeEnum.Mousedown ||
+        type === LiveSyncEventTypeEnum.Mouseup ||
+        type === LiveSyncEventTypeEnum.Dblclick)
+        ? (payload as DomMousePayload)
+        : null;
+
+      const resolveResult = await resolveElement(
+        target,
+        mousePayload?.clientXRatio,
+        mousePayload?.clientYRatio,
+      );
+
       if (!resolveResult) {
         this.sendAck(
           event,
@@ -89,36 +101,108 @@ export class EventApplier {
       const element = resolveResult.element as HTMLElement;
 
       switch (type) {
-        case LiveSyncEventTypeEnum.Click:
-        case LiveSyncEventTypeEnum.Dblclick: {
-          const mousePayload = payload as DomMousePayload;
+        case LiveSyncEventTypeEnum.Mousedown:
+        case LiveSyncEventTypeEnum.Mouseup: {
+          const mp = payload as DomMousePayload;
           const rect = element.getBoundingClientRect();
-          const clickX =
-            rect.left + (mousePayload.offsetXRatio || 0.5) * rect.width;
-          const clickY =
-            rect.top + (mousePayload.offsetYRatio || 0.5) * rect.height;
+          const x = mp.clientXRatio !== undefined
+            ? mp.clientXRatio * window.innerWidth
+            : rect.left + (mp.offsetXRatio || 0.5) * rect.width;
+          const y = mp.clientYRatio !== undefined
+            ? mp.clientYRatio * window.innerHeight
+            : rect.top + (mp.offsetYRatio || 0.5) * rect.height;
 
-          this.cursor.animateClick(clickX, clickY);
+          const pointerType = type === LiveSyncEventTypeEnum.Mousedown ? 'pointerdown' : 'pointerup';
 
-          element.focus();
+          if (typeof PointerEvent === 'function') {
+            element.dispatchEvent(
+              new PointerEvent(pointerType, {
+                bubbles: true,
+                cancelable: true,
+                clientX: x,
+                clientY: y,
+                button: mp.button || 0,
+                ctrlKey: mp.ctrlKey || false,
+                shiftKey: mp.shiftKey || false,
+                altKey: mp.altKey || false,
+                metaKey: mp.metaKey || false,
+                pointerId: 1,
+                pointerType: 'mouse',
+                isPrimary: true,
+              }),
+            );
+          }
+
           element.dispatchEvent(
             new MouseEvent(type, {
               bubbles: true,
               cancelable: true,
-              clientX: clickX,
-              clientY: clickY,
-              button: mousePayload.button || 0,
-              ctrlKey: mousePayload.ctrlKey || false,
-              shiftKey: mousePayload.shiftKey || false,
-              altKey: mousePayload.altKey || false,
-              metaKey: mousePayload.metaKey || false,
+              clientX: x,
+              clientY: y,
+              button: mp.button || 0,
+              ctrlKey: mp.ctrlKey || false,
+              shiftKey: mp.shiftKey || false,
+              altKey: mp.altKey || false,
+              metaKey: mp.metaKey || false,
             }),
           );
 
-          if (element instanceof HTMLInputElement && (element.type === 'checkbox' || element.type === 'radio')) {
-            element.click();
-          } else if (element.tagName === 'A' || element.tagName === 'BUTTON') {
-            element.click();
+          this.sendAck(event, true, startTime, resolveResult.strategy);
+          break;
+        }
+
+        case LiveSyncEventTypeEnum.Click:
+        case LiveSyncEventTypeEnum.Dblclick: {
+          const mp = payload as DomMousePayload;
+          const rect = element.getBoundingClientRect();
+          const clickX = mp.clientXRatio !== undefined
+            ? mp.clientXRatio * window.innerWidth
+            : rect.left + (mp.offsetXRatio || 0.5) * rect.width;
+          const clickY = mp.clientYRatio !== undefined
+            ? mp.clientYRatio * window.innerHeight
+            : rect.top + (mp.offsetYRatio || 0.5) * rect.height;
+
+          this.cursor.animateClick(clickX, clickY);
+
+          if (typeof element.focus === 'function') {
+            try {
+              element.focus();
+            } catch {
+              // safe fallback
+            }
+          }
+
+          const eventInit = {
+            bubbles: true,
+            cancelable: true,
+            clientX: clickX,
+            clientY: clickY,
+            button: mp.button || 0,
+            ctrlKey: mp.ctrlKey || false,
+            shiftKey: mp.shiftKey || false,
+            altKey: mp.altKey || false,
+            metaKey: mp.metaKey || false,
+          };
+
+          if (typeof PointerEvent === 'function') {
+            element.dispatchEvent(new PointerEvent('pointerdown', { ...eventInit, pointerId: 1, pointerType: 'mouse', isPrimary: true }));
+          }
+          element.dispatchEvent(new MouseEvent('mousedown', eventInit));
+
+          if (typeof PointerEvent === 'function') {
+            element.dispatchEvent(new PointerEvent('pointerup', { ...eventInit, pointerId: 1, pointerType: 'mouse', isPrimary: true }));
+          }
+          element.dispatchEvent(new MouseEvent('mouseup', eventInit));
+
+          element.dispatchEvent(new MouseEvent(type, eventInit));
+
+          const clickable = element.closest('a, button, input, [role="button"], [role="menuitem"], [role="option"], [onclick], [tabindex]') || element;
+          if ('click' in clickable && typeof (clickable as HTMLElement).click === 'function') {
+            try {
+              (clickable as HTMLElement).click();
+            } catch {
+              // safe fallback
+            }
           }
 
           this.sendAck(event, true, startTime, resolveResult.strategy);

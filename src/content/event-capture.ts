@@ -131,23 +131,51 @@ export class EventCapture {
   }
 
   private registerEventListeners(): void {
+    const buildMousePayload = (e: MouseEvent, target: Element): DomMousePayload => {
+      const rect = target.getBoundingClientRect();
+      return {
+        button: e.button,
+        buttons: e.buttons,
+        ctrlKey: e.ctrlKey,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey,
+        metaKey: e.metaKey,
+        offsetXRatio: rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0.5,
+        offsetYRatio: rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5,
+        clientXRatio: window.innerWidth > 0 ? e.clientX / window.innerWidth : 0,
+        clientYRatio: window.innerHeight > 0 ? e.clientY / window.innerHeight : 0,
+      };
+    };
+
     document.addEventListener(
       'click',
       (e: MouseEvent) => {
         if (!this.active()) return;
         const target = e.target as Element | null;
         if (!target) return;
-        const rect = target.getBoundingClientRect();
-        const payload: DomMousePayload = {
-          button: e.button,
-          ctrlKey: e.ctrlKey,
-          shiftKey: e.shiftKey,
-          altKey: e.altKey,
-          metaKey: e.metaKey,
-          offsetXRatio: rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0.5,
-          offsetYRatio: rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5,
-        };
-        this.sendEvent('click', target, payload);
+        this.sendEvent('click', target, buildMousePayload(e, target));
+      },
+      true,
+    );
+
+    document.addEventListener(
+      'mousedown',
+      (e: MouseEvent) => {
+        if (!this.active()) return;
+        const target = e.target as Element | null;
+        if (!target) return;
+        this.sendEvent('mousedown', target, buildMousePayload(e, target));
+      },
+      true,
+    );
+
+    document.addEventListener(
+      'mouseup',
+      (e: MouseEvent) => {
+        if (!this.active()) return;
+        const target = e.target as Element | null;
+        if (!target) return;
+        this.sendEvent('mouseup', target, buildMousePayload(e, target));
       },
       true,
     );
@@ -158,13 +186,7 @@ export class EventCapture {
         if (!this.active()) return;
         const target = e.target as Element | null;
         if (!target) return;
-        const rect = target.getBoundingClientRect();
-        const payload: DomMousePayload = {
-          button: e.button,
-          offsetXRatio: rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0.5,
-          offsetYRatio: rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5,
-        };
-        this.sendEvent('dblclick', target, payload);
+        this.sendEvent('dblclick', target, buildMousePayload(e, target));
       },
       true,
     );
