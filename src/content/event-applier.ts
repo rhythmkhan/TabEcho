@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-deprecated */
 import {
   DomContentEditablePayload,
   DomInputPayload,
@@ -130,7 +131,7 @@ export class EventApplier {
                 metaKey: mp.metaKey || false,
                 pointerId: 1,
                 pointerType: 'mouse',
-                isPrimary: true,
+                isPrimary: mp.button === 0,
               }),
             );
           }
@@ -166,7 +167,7 @@ export class EventApplier {
 
           this.cursor.animateClick(clickX, clickY);
 
-          element.dispatchEvent(
+          const defaultNotPrevented = element.dispatchEvent(
             new MouseEvent(type, {
               bubbles: true,
               cancelable: true,
@@ -179,6 +180,20 @@ export class EventApplier {
               metaKey: mp.metaKey || false,
             }),
           );
+
+          if (mp.button === 3 && defaultNotPrevented) {
+            try {
+              document.execCommand('undo');
+            } catch {
+              // safe fallback
+            }
+          } else if (mp.button === 4 && defaultNotPrevented) {
+            try {
+              document.execCommand('redo');
+            } catch {
+              // safe fallback
+            }
+          }
 
           this.sendAck(event, true, startTime, resolveResult.strategy);
           break;
@@ -352,6 +367,27 @@ export class EventApplier {
           const defaultNotPrevented = element.dispatchEvent(kbEvent);
 
           if (type === LiveSyncEventTypeEnum.Keydown) {
+            if (kbPayload.ctrlKey || kbPayload.metaKey) {
+              const k = kbPayload.key.toLowerCase();
+              if (k === 'z') {
+                try {
+                  if (kbPayload.shiftKey) {
+                    document.execCommand('redo');
+                  } else {
+                    document.execCommand('undo');
+                  }
+                } catch {
+                  // safe fallback
+                }
+              } else if (k === 'y') {
+                try {
+                  document.execCommand('redo');
+                } catch {
+                  // safe fallback
+                }
+              }
+            }
+
             if (isEnter) {
               const kpEvent = new KeyboardEvent('keypress', {
                 ...kbEventInit,
@@ -363,6 +399,7 @@ export class EventApplier {
               element.dispatchEvent(kpEvent);
 
               const form = element.closest('form');
+
               if (form) {
                 const submitBtn = form.querySelector<HTMLElement>(
                   'input[name="btnK"], input[type="submit"], button[type="submit"]',

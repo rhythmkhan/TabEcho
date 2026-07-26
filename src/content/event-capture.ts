@@ -203,6 +203,33 @@ export class EventCapture {
     );
 
     document.addEventListener(
+      'pointerdown',
+      (e: PointerEvent) => {
+        if (!this.active()) return;
+        if (e.button >= 3) {
+          const target = e.target as Element | null;
+          if (!target) return;
+          this.sendEvent('mousedown', target, buildMousePayload(e, target));
+        }
+      },
+      true,
+    );
+
+    document.addEventListener(
+      'pointerup',
+      (e: PointerEvent) => {
+        if (!this.active()) return;
+        if (e.button >= 3) {
+          const target = e.target as Element | null;
+          if (!target) return;
+          this.sendEvent('mouseup', target, buildMousePayload(e, target));
+          this.sendEvent('auxclick', target, buildMousePayload(e, target));
+        }
+      },
+      true,
+    );
+
+    document.addEventListener(
       'dblclick',
       (e: MouseEvent) => {
         if (!this.active()) return;
