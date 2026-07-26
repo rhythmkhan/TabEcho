@@ -14,47 +14,86 @@ export function createMessageRouter(sessionManager: SessionManager): void {
     ) => {
       switch (message.type) {
         case ExtensionMessageTypeEnum.StartSession: {
-          void sessionManager.start(message.payload, sendResponse);
+          sessionManager
+            .start(message.payload, sendResponse)
+            .catch((err: unknown) => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.SessionError,
+                error: err instanceof Error ? err.message : String(err),
+              });
+            });
           return true;
         }
 
         case ExtensionMessageTypeEnum.PauseSession: {
-          void sessionManager.pause(message.reason).then(() => {
-            sendResponse({
-              type: ExtensionMessageTypeEnum.SessionStatus,
-              payload: sessionManager.currentSession,
+          sessionManager
+            .pause(message.reason)
+            .then(() => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.SessionStatus,
+                payload: sessionManager.currentSession,
+              });
+            })
+            .catch((err: unknown) => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.SessionError,
+                error: err instanceof Error ? err.message : String(err),
+              });
             });
-          });
           return true;
         }
 
         case ExtensionMessageTypeEnum.ResumeSession: {
-          void sessionManager.resume(message.reason).then(() => {
-            sendResponse({
-              type: ExtensionMessageTypeEnum.SessionStatus,
-              payload: sessionManager.currentSession,
+          sessionManager
+            .resume(message.reason)
+            .then(() => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.SessionStatus,
+                payload: sessionManager.currentSession,
+              });
+            })
+            .catch((err: unknown) => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.SessionError,
+                error: err instanceof Error ? err.message : String(err),
+              });
             });
-          });
           return true;
         }
 
         case ExtensionMessageTypeEnum.StopSession: {
-          void sessionManager.stop(message.reason).then(() => {
-            sendResponse({
-              type: ExtensionMessageTypeEnum.SessionStatus,
-              payload: sessionManager.currentSession,
+          sessionManager
+            .stop(message.reason)
+            .then(() => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.SessionStatus,
+                payload: sessionManager.currentSession,
+              });
+            })
+            .catch(() => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.SessionStatus,
+                payload: sessionManager.currentSession,
+              });
             });
-          });
           return true;
         }
 
         case ExtensionMessageTypeEnum.EmergencyStop: {
-          void sessionManager.emergencyStop(message.reason).then(() => {
-            sendResponse({
-              type: ExtensionMessageTypeEnum.SessionStatus,
-              payload: sessionManager.currentSession,
+          sessionManager
+            .emergencyStop(message.reason)
+            .then(() => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.SessionStatus,
+                payload: sessionManager.currentSession,
+              });
+            })
+            .catch(() => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.SessionStatus,
+                payload: sessionManager.currentSession,
+              });
             });
-          });
           return true;
         }
 
@@ -67,22 +106,37 @@ export function createMessageRouter(sessionManager: SessionManager): void {
         }
 
         case ExtensionMessageTypeEnum.GetEligibleTabs: {
-          void queryEligibleTabs().then((tabs) => {
-            sendResponse({
-              type: ExtensionMessageTypeEnum.TabSummaryResponse,
-              payload: tabs,
+          queryEligibleTabs()
+            .then((tabs) => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.TabSummaryResponse,
+                payload: tabs,
+              });
+            })
+            .catch(() => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.TabSummaryResponse,
+                payload: [],
+              });
             });
-          });
           return true;
         }
 
         case ExtensionMessageTypeEnum.RemoveTarget: {
-          void sessionManager.removeTarget(message.payload.targetTabId).then(() => {
-            sendResponse({
-              type: ExtensionMessageTypeEnum.SessionStatus,
-              payload: sessionManager.currentSession,
+          sessionManager
+            .removeTarget(message.payload.targetTabId)
+            .then(() => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.SessionStatus,
+                payload: sessionManager.currentSession,
+              });
+            })
+            .catch((err: unknown) => {
+              sendResponse({
+                type: ExtensionMessageTypeEnum.SessionError,
+                error: err instanceof Error ? err.message : String(err),
+              });
             });
-          });
           return true;
         }
 
