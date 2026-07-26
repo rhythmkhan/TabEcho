@@ -42,6 +42,7 @@ export type LiveSyncEventType =
   | 'mousedown'
   | 'mouseup'
   | 'contextmenu'
+  | 'auxclick'
   | 'input'
   | 'change'
   | 'keydown'
@@ -63,6 +64,7 @@ export const LiveSyncEventTypeEnum = {
   Mousedown: 'mousedown',
   Mouseup: 'mouseup',
   Contextmenu: 'contextmenu',
+  Auxclick: 'auxclick',
   Input: 'input',
   Change: 'change',
   Keydown: 'keydown',

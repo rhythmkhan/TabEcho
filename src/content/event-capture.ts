@@ -159,6 +159,28 @@ export class EventCapture {
     );
 
     document.addEventListener(
+      'auxclick',
+      (e: MouseEvent) => {
+        if (!this.active()) return;
+        const target = e.target as Element | null;
+        if (!target) return;
+        this.sendEvent('auxclick', target, buildMousePayload(e, target));
+      },
+      true,
+    );
+
+    document.addEventListener(
+      'contextmenu',
+      (e: MouseEvent) => {
+        if (!this.active()) return;
+        const target = e.target as Element | null;
+        if (!target) return;
+        this.sendEvent('contextmenu', target, buildMousePayload(e, target));
+      },
+      true,
+    );
+
+    document.addEventListener(
       'mousedown',
       (e: MouseEvent) => {
         if (!this.active()) return;

@@ -76,7 +76,9 @@ export class EventApplier {
       const mousePayload = (type === LiveSyncEventTypeEnum.Click ||
         type === LiveSyncEventTypeEnum.Mousedown ||
         type === LiveSyncEventTypeEnum.Mouseup ||
-        type === LiveSyncEventTypeEnum.Dblclick)
+        type === LiveSyncEventTypeEnum.Dblclick ||
+        type === LiveSyncEventTypeEnum.Contextmenu ||
+        type === LiveSyncEventTypeEnum.Auxclick)
         ? (payload as DomMousePayload)
         : null;
 
@@ -140,6 +142,37 @@ export class EventApplier {
               clientX: x,
               clientY: y,
               button: mp.button || 0,
+              ctrlKey: mp.ctrlKey || false,
+              shiftKey: mp.shiftKey || false,
+              altKey: mp.altKey || false,
+              metaKey: mp.metaKey || false,
+            }),
+          );
+
+          this.sendAck(event, true, startTime, resolveResult.strategy);
+          break;
+        }
+
+        case LiveSyncEventTypeEnum.Contextmenu:
+        case LiveSyncEventTypeEnum.Auxclick: {
+          const mp = payload as DomMousePayload;
+          const rect = element.getBoundingClientRect();
+          const clickX = mp.clientXRatio !== undefined
+            ? mp.clientXRatio * window.innerWidth
+            : rect.left + (mp.offsetXRatio || 0.5) * rect.width;
+          const clickY = mp.clientYRatio !== undefined
+            ? mp.clientYRatio * window.innerHeight
+            : rect.top + (mp.offsetYRatio || 0.5) * rect.height;
+
+          this.cursor.animateClick(clickX, clickY);
+
+          element.dispatchEvent(
+            new MouseEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              clientX: clickX,
+              clientY: clickY,
+              button: mp.button ?? 2,
               ctrlKey: mp.ctrlKey || false,
               shiftKey: mp.shiftKey || false,
               altKey: mp.altKey || false,
@@ -287,6 +320,10 @@ export class EventApplier {
         case LiveSyncEventTypeEnum.Keyup: {
           const kbPayload = payload as DomKeyboardPayload;
           const isEnter = kbPayload.key === 'Enter';
+          const isTab = kbPayload.key === 'Tab';
+          const isSpace = kbPayload.key === ' ' || kbPayload.key === 'Spacebar';
+          const isBackspace = kbPayload.key === 'Backspace';
+          const isDelete = kbPayload.key === 'Delete';
 
           const kbEventInit: KeyboardEventInit = {
             bubbles: true,
@@ -304,58 +341,100 @@ export class EventApplier {
           if (isEnter) {
             Object.defineProperty(kbEvent, 'keyCode', { value: 13 });
             Object.defineProperty(kbEvent, 'which', { value: 13 });
+          } else if (isTab) {
+            Object.defineProperty(kbEvent, 'keyCode', { value: 9 });
+            Object.defineProperty(kbEvent, 'which', { value: 9 });
+          } else if (isSpace) {
+            Object.defineProperty(kbEvent, 'keyCode', { value: 32 });
+            Object.defineProperty(kbEvent, 'which', { value: 32 });
           }
 
-          element.dispatchEvent(kbEvent);
+          const defaultNotPrevented = element.dispatchEvent(kbEvent);
 
-          if (type === LiveSyncEventTypeEnum.Keydown && isEnter) {
-            const kpEvent = new KeyboardEvent('keypress', {
-              bubbles: true,
-              cancelable: true,
-              key: 'Enter',
-              code: kbPayload.code || 'Enter',
-              ctrlKey: kbPayload.ctrlKey,
-              shiftKey: kbPayload.shiftKey,
-              altKey: kbPayload.altKey,
-              metaKey: kbPayload.metaKey,
-            });
-            Object.defineProperty(kpEvent, 'keyCode', { value: 13 });
-            Object.defineProperty(kpEvent, 'which', { value: 13 });
-            Object.defineProperty(kpEvent, 'charCode', { value: 13 });
-            element.dispatchEvent(kpEvent);
+          if (type === LiveSyncEventTypeEnum.Keydown) {
+            if (isEnter) {
+              const kpEvent = new KeyboardEvent('keypress', {
+                ...kbEventInit,
+                key: 'Enter',
+              });
+              Object.defineProperty(kpEvent, 'keyCode', { value: 13 });
+              Object.defineProperty(kpEvent, 'which', { value: 13 });
+              Object.defineProperty(kpEvent, 'charCode', { value: 13 });
+              element.dispatchEvent(kpEvent);
 
-            const form = element.closest('form');
+              const form = element.closest('form');
+              if (form) {
+                const submitBtn = form.querySelector<HTMLElement>(
+                  'input[name="btnK"], input[type="submit"], button[type="submit"]',
+                );
 
-            if (form) {
-              const submitBtn = form.querySelector<HTMLElement>(
-                'input[name="btnK"], input[type="submit"], button[type="submit"]',
-              );
-
-              if (submitBtn && typeof submitBtn.click === 'function') {
-                try {
-                  submitBtn.click();
-                } catch {
-                  if (typeof form.requestSubmit === 'function') {
-                    try {
-                      form.requestSubmit();
-                    } catch {
+                if (submitBtn && typeof submitBtn.click === 'function') {
+                  try {
+                    submitBtn.click();
+                  } catch {
+                    if (typeof form.requestSubmit === 'function') {
+                      try {
+                        form.requestSubmit();
+                      } catch {
+                        form.submit();
+                      }
+                    } else {
                       form.submit();
                     }
-                  } else {
+                  }
+                } else if (typeof form.requestSubmit === 'function') {
+                  try {
+                    form.requestSubmit();
+                  } catch {
                     form.submit();
                   }
-                }
-              } else if (typeof form.requestSubmit === 'function') {
-                try {
-                  form.requestSubmit();
-                } catch {
+                } else {
                   form.submit();
                 }
-              } else {
-                form.submit();
+              } else if (element.tagName === 'BUTTON' || element.getAttribute('role') === 'button') {
+                element.click();
               }
-            } else if (element.tagName === 'BUTTON' || element.getAttribute('role') === 'button') {
-              element.click();
+            } else if (isTab && defaultNotPrevented) {
+              const focusables = Array.from(
+                document.querySelectorAll<HTMLElement>(
+                  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+                ),
+              ).filter((el) => el.offsetWidth > 0 && el.offsetHeight > 0);
+
+              const currIdx = focusables.indexOf(element);
+              if (currIdx !== -1) {
+                const nextIdx = kbPayload.shiftKey
+                  ? (currIdx - 1 + focusables.length) % focusables.length
+                  : (currIdx + 1) % focusables.length;
+                focusables[nextIdx]?.focus();
+              }
+            } else if (isSpace && defaultNotPrevented) {
+              if (element instanceof HTMLInputElement && (element.type === 'checkbox' || element.type === 'radio')) {
+                element.click();
+              } else if (element.tagName === 'BUTTON' || element.getAttribute('role') === 'button') {
+                element.click();
+              }
+            } else if ((isBackspace || isDelete) && defaultNotPrevented) {
+              if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+                const val = element.value;
+                const start = element.selectionStart;
+                const end = element.selectionEnd;
+
+                if (start !== null && end !== null) {
+                  if (start !== end) {
+                    element.value = val.substring(0, start) + val.substring(end);
+                    element.selectionStart = element.selectionEnd = start;
+                  } else if (isBackspace && start > 0) {
+                    element.value = val.substring(0, start - 1) + val.substring(start);
+                    element.selectionStart = element.selectionEnd = start - 1;
+                  } else if (isDelete && start < val.length) {
+                    element.value = val.substring(0, start) + val.substring(start + 1);
+                    element.selectionStart = element.selectionEnd = start;
+                  }
+                  element.dispatchEvent(new Event('input', { bubbles: true }));
+                  element.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }
             }
           }
 
