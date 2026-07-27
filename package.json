@@ -38,7 +38,7 @@
     "jest-environment-jsdom": "^30.4.1",
     "jiti": "^2.6.1",
     "standard-version": "^9.5.0",
-    "ts-jest": "^29.4.9",
+    "ts-jest": "^29.4.12",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.59.2",
